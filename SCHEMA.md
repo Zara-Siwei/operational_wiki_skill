@@ -26,7 +26,7 @@ type: source | concept | tool | api | analysis | overview | conventions
 - `source`: 原始资料的摘要页；教材、论文、长 Markdown、单页大 HTML、文档站目录都落在这里
 - `concept`: 稳定概念页；定义、公式、适用条件、证据、与工具/API的联系
 - `tool`: 工具或模块页；包、模块、子系统
-- `api`: 高价值函数、类、方法页；只为重要 API 建页
+- `api`: 高价值函数、类、方法页；仅在用户明确要求时使用，日常 ingest 流程不默认建 api 页
 - `analysis`: 跨来源综合分析
 
 ## Frontmatter
@@ -61,7 +61,7 @@ tool_kind: package | module | workflow
 module_path: plasmapy.formulary     # 可选
 ```
 
-### `api`
+### `api`（极少使用，仅用户明确要求时）
 
 ```yaml
 api_kind: function | class | method
