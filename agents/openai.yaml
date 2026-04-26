@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operational Wiki"
+  short_description: "Build a readable, evidence-first wiki from mixed research sources and docs"
+  default_prompt: "Use $operational-wiki to ingest, connect, or query textbooks, papers, large Markdown/HTML files, and API docs in a mixed research knowledge base."

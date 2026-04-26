@@ -1,0 +1,16 @@
+{
+  "_template": true,
+  "_comment": "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓",
+  "_comment2": "⚠️  这是模板文件，不含真实密钥。首次使用请复制并重命名为 registries.json",
+  "_comment3": "     替换其中的 YOUR_KB_PATH_HERE 为你自己的知识库路径（如 D:\\my-wiki）",
+  "_comment4": "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑",
+  "default": "my-wiki",
+  "registries": {
+    "my-wiki": {
+      "name": "我的知识库",
+      "path": "YOUR_KB_PATH_HERE",
+      "language": "zh",
+      "created": "YYYY-MM-DD"
+    }
+  }
+}
