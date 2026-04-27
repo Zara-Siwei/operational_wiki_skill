@@ -98,6 +98,11 @@ python <skill-dir>/scripts/segment_source.py <path>
 - `Evidence Targets`
 - typed `Related`
 
+额外约束：
+- 不要写 `[...](raw/...)` 这种相对链接；在 `wiki/` 视图里它常被解析成 wiki 内部路径，并可能误创建 `wiki/raw/...` 空白文件
+- 原始素材定位以 frontmatter 中的 `raw_path` 为准
+- 若确实需要可点击链接，必须按当前页面实际位置计算相对路径；对 `wiki/sources/*.md` 通常应为 `../../raw/...`
+
 ### `concept` 页
 
 优先补这些区块：
