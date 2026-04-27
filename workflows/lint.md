@@ -30,6 +30,7 @@ python <skill-dir>/scripts/lint.py --wiki-dir <KB_WIKI> --raw-dir <KB_RAW> --jso
 - API 页是否过多、过碎
 - 是否有 `source` 页没有被 concept/tool/api 消化
 - 是否有重要概念缺 `Evidence`
+- 回答核心定义时是否过度依赖低权重来源，而忽略了更高权重的教材/综述/手册型来源
 
 ## 3. 输出报告
 
