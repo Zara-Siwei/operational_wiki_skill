@@ -2,7 +2,7 @@
 
 **Evidence-first operational wiki for mixed research knowledge bases.**
 
-维护一个"轻结构、强可读、可操作"的知识库——把教材、论文、长 Markdown、API 文档快照统一收录成可回溯的概念页、工具页和证据链。
+维护一个"轻结构、强可读、可操作"的知识库——把教材、论文、长 Markdown、API 文档快照统一收录成可回溯的 `source` 页、`concept` 页及证据链；`tool` / `api` 页按需补充，而不是默认展开。
 
 ---
 
@@ -109,11 +109,35 @@ KB_ROOT/
 |------|------|
 | `source` | 原始素材摘要页（教材、论文、文档快照） |
 | `concept` | 稳定概念：定义、公式、适用条件、证据 |
-| `tool` | 工具/包/模块总览页 |
-| `api` | 高价值函数、类、方法页 |
+| `tool` | 工具/包/模块总览页（仅在确有必要时补充） |
+| `api` | 高价值函数、类、方法页（默认不创建，仅用户明确要求时使用） |
 | `analysis` | 跨来源综合分析 |
-| `overview` | 知识库总览（自动生成） |
-| `conventions` | 操作偏好与约定 |
+| `overview` | 知识库总览（系统页，自动维护） |
+| `conventions` | 操作偏好与约定（系统页） |
+
+---
+
+## 默认工作模式
+
+- 日常 ingest 以 `source + concept` 为主
+- `tool` / `api` 只在反复引用、需要统一索引，或用户明确要求时补充
+- `api_docs` 默认按"文献模式"处理：保留 source 页，将公式定义、参数约束、适用边界吸收到 concept 页
+
+---
+
+## 来源分层
+
+技能不会给 concept 节点额外维护"重要性"字段，而是在查询和综合时利用 `source_kind` 做默认来源分层：
+
+1. `textbook` / `reference_manual` / `tutorial`
+2. `paper` 中的综述、讲义式总结、领域总览
+3. 一般研究性 `paper`
+4. `api_docs` / `notes`
+
+使用原则：
+- 核心定义、标准公式、基本假设优先采用高权重来源
+- 研究性论文更适合作为补充证据、特例、边界条件或新近结果
+- `api_docs` 主要用于实现细节、参数约束和使用边界，不单独主导物理定义
 
 ---
 
@@ -154,7 +178,7 @@ KB_ROOT/
 | 级别 | 含义 | 处理方式 |
 |------|------|----------|
 | P0 | 断链、缺 frontmatter、索引不一致 | 必须修复 |
-| P1 | Typed relation 格式、Evidence 格式 | 建议修复 |
+| P1 | Typed relation、Evidence、路径约定、非受管 Markdown | 建议修复 |
 | P2 | 语义问题、重复页 | 视情况优化 |
 
 
@@ -164,11 +188,11 @@ KB_ROOT/
 
 本技能基于 [ChavesLiu/second-brain-skill](https://github.com/ChavesLiu/second-brain-skill) 改良而来。在原版基础上，针对个人知识库的实际使用场景做了以下扩展：
 
-- **结构化分层**：引入 `source / concept / tool / api / analysis` 五类页面类型，明确每类页面的角色与边界
+- **结构化分层**：以 `source / concept / tool / api / analysis` 五类核心内容页组织知识，并配套 `overview / conventions` 等系统页面；日常 ingest 以 `source + concept` 为主
 - **Typed Relations**：所有跨页关系强制使用带类型的关系标签（`explained_by`、`implemented_by` 等），提升知识图谱可用性
 - **证据追溯**：引入 `Evidence` 区块，要求每条证据包含 `source` + `locator`，确保可回溯到原始资料
+- **来源分层**：利用 `source_kind` 在查询阶段自动区分教材/手册/综述与一般研究论文、API 文档的权重，而不为 concept 节点额外增加重要性字段
 - **大文件分段读取**：新增 `segment_source.py`，支持对超大 Markdown / HTML 文件按标题分段抽纲，避免一次性塞入上下文
-- **lint 健康检查**：新增 P0/P1/P2 三级审计，覆盖断链、frontmatter、索引一致性、关系格式、证据格式等维度
+- **lint 健康检查**：新增 P0/P1/P2 三级审计，覆盖断链、frontmatter、索引一致性、关系格式、证据格式、路径约定等维度
 - **约定管理**：引入 `conventions.md`，记录用户在查询/收录/lint 时的偏好设置
 - **多知识库支持**：`registries.json` 支持多库注册 + default 指定
-
