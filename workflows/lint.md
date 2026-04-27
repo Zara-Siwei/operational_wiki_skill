@@ -13,6 +13,8 @@ python <skill-dir>/scripts/lint.py --wiki-dir <KB_WIKI> --raw-dir <KB_RAW> --jso
 脚本覆盖：
 - 断链
 - `[[raw/...]]` 误用
+- 指向 `raw/` 的不规范相对 Markdown 链接
+- 非受管目录中的 Markdown 文件
 - frontmatter 缺失
 - `source/tool/api` 元数据缺失
 - `index.md` 与实际页面不一致
