@@ -54,6 +54,11 @@ source_kind: textbook | paper | api_docs | tutorial | reference_manual | notes
 raw_path: raw/相对路径
 ```
 
+约定：
+- `raw_path` 是 source 页定位原始素材的规范字段
+- `raw/` 仅表示知识库根目录下的素材存储区，不作为 wiki 页面空间使用
+- 如需在正文提供可点击入口，使用普通 Markdown 链接，并按当前页面位置计算正确相对路径
+
 ### `tool`
 
 ```yaml
