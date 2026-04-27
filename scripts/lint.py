@@ -26,6 +26,8 @@ if sys.platform == "win32":
 REQUIRED_FRONTMATTER = {"title", "type", "created", "updated", "tags"}
 VALID_TYPES = {"source", "concept", "tool", "api", "analysis", "overview", "conventions"}
 SPECIAL_PAGES = {"index.md", "log.md"}
+ROOT_PAGES = {"overview.md", "conventions.md"}
+CONTENT_DIRS = {"sources", "concepts", "tools", "apis", "analyses"}
 RELATED_RELATIONS = {
     "documents",
     "explained_by",
@@ -69,7 +71,34 @@ def resolve_wikilink(target: str) -> Path | None:
 
 
 def get_wiki_pages() -> list[Path]:
-    return sorted([p for p in WIKI_DIR.rglob("*.md") if p.name not in SPECIAL_PAGES])
+    pages: list[Path] = []
+    for name in ROOT_PAGES:
+        path = WIKI_DIR / name
+        if path.exists():
+            pages.append(path)
+    for dirname in CONTENT_DIRS:
+        base = WIKI_DIR / dirname
+        if base.exists():
+            pages.extend(sorted(base.rglob("*.md")))
+    return sorted(pages)
+
+
+def check_unmanaged_markdown(pages: list[Path]) -> list[dict]:
+    issues = []
+    managed = {p.resolve() for p in pages}
+    managed.update((WIKI_DIR / name).resolve() for name in SPECIAL_PAGES if (WIKI_DIR / name).exists())
+    for page in sorted(WIKI_DIR.rglob("*.md")):
+        if page.resolve() in managed:
+            continue
+        issues.append(
+            {
+                "level": "P1",
+                "type": "unmanaged_markdown",
+                "file": str(page.relative_to(WIKI_DIR)),
+                "detail": "位于非受管目录；通常是错误相对链接触发的误建文件",
+            }
+        )
+    return issues
 
 
 def check_broken_links(pages: list[Path]) -> list[dict]:
@@ -91,6 +120,15 @@ def check_raw_wikilinks(pages: list[Path]) -> list[dict]:
         text = page.read_text(encoding="utf-8")
         for match in re.findall(r"\[\[(raw/[^\]|]+)(?:\|[^\]]+)?\]\]", text):
             issues.append({"level": "P0", "type": "raw_wikilink", "file": str(page.relative_to(WIKI_DIR)), "detail": f"[[{match}]] 应改为普通 Markdown 链接"})
+        for match in re.findall(r"\]\((raw/[^)]+)\)", text):
+            issues.append(
+                {
+                    "level": "P1",
+                    "type": "raw_relative_markdown_link",
+                    "file": str(page.relative_to(WIKI_DIR)),
+                    "detail": f"检测到相对 raw 链接 ({match})；请改用 frontmatter raw_path，或使用从当前页面可正确到达 raw 的相对路径",
+                }
+            )
     return issues
 
 
@@ -188,6 +226,7 @@ def check_evidence_format(pages: list[Path]) -> list[dict]:
 def run_all_checks() -> list[dict]:
     pages = get_wiki_pages()
     issues = []
+    issues += check_unmanaged_markdown(pages)
     issues += check_broken_links(pages)
     issues += check_raw_wikilinks(pages)
     issues += check_frontmatter(pages)
