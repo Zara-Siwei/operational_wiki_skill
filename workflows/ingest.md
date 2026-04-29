@@ -20,6 +20,7 @@
 
 将素材归类为：
 - `textbook`
+- `review`
 - `paper`
 - `api_docs`
 - `tutorial`
@@ -30,6 +31,10 @@
 - 普通单文件
 - 大文件
 - 文档站目录
+
+判定要点：
+- 综述论文、survey、overview、讲义式总结、领域总览，直接归为 `review`
+- 只有常规研究论文才归为 `paper`
 
 必要时读取 `references/source-strategies.md`。
 
