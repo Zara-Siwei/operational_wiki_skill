@@ -50,7 +50,7 @@ sources: [source-page-id]          # source 页面可省略
 ### `source`
 
 ```yaml
-source_kind: textbook | paper | api_docs | tutorial | reference_manual | notes
+source_kind: textbook | review | paper | api_docs | tutorial | reference_manual | notes
 raw_path: raw/相对路径
 ```
 
@@ -59,6 +59,7 @@ raw_path: raw/相对路径
 - `raw/` 仅表示知识库根目录下的素材存储区，不作为 wiki 页面空间使用
 - 如需在正文提供可点击入口，使用普通 Markdown 链接，并按当前页面位置计算正确相对路径
 - `source_kind` 同时承担查询阶段的默认来源分层，不必再为 concept 节点额外维护“重要性”字段
+- `review` 用于综述论文、survey、overview、讲义式总结、领域总览等高概括来源
 
 ### `tool`
 
