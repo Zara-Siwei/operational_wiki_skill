@@ -130,12 +130,13 @@ KB_ROOT/
 技能不会给 concept 节点额外维护"重要性"字段，而是在查询和综合时利用 `source_kind` 做默认来源分层：
 
 1. `textbook` / `reference_manual` / `tutorial`
-2. `paper` 中的综述、讲义式总结、领域总览
-3. 一般研究性 `paper`
+2. `review`
+3. `paper`
 4. `api_docs` / `notes`
 
 使用原则：
 - 核心定义、标准公式、基本假设优先采用高权重来源
+- `review` 在可靠性和覆盖面方面高于单项研究论文，可作为一级定义参考
 - 研究性论文更适合作为补充证据、特例、边界条件或新近结果
 - `api_docs` 主要用于实现细节、参数约束和使用边界，不单独主导物理定义
 
@@ -191,7 +192,7 @@ KB_ROOT/
 - **结构化分层**：以 `source / concept / tool / api / analysis` 五类核心内容页组织知识，并配套 `overview / conventions` 等系统页面；日常 ingest 以 `source + concept` 为主
 - **Typed Relations**：所有跨页关系强制使用带类型的关系标签（`explained_by`、`implemented_by` 等），提升知识图谱可用性
 - **证据追溯**：引入 `Evidence` 区块，要求每条证据包含 `source` + `locator`，确保可回溯到原始资料
-- **来源分层**：利用 `source_kind` 在查询阶段自动区分教材/手册/综述与一般研究论文、API 文档的权重，而不为 concept 节点额外增加重要性字段
+- **来源分层**：利用 `source_kind` 在查询阶段自动区分教材/手册/`review`、一般研究论文与 API 文档的权重，而不为 concept 节点额外增加重要性字段
 - **大文件分段读取**：新增 `segment_source.py`，支持对超大 Markdown / HTML 文件按标题分段抽纲，避免一次性塞入上下文
 - **lint 健康检查**：新增 P0/P1/P2 三级审计，覆盖断链、frontmatter、索引一致性、关系格式、证据格式、路径约定等维度
 - **约定管理**：引入 `conventions.md`，记录用户在查询/收录/lint 时的偏好设置
