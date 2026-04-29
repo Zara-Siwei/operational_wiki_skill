@@ -59,6 +59,19 @@
 - `concept`
 - `analysis`
 
+### `review`
+
+优先提取：
+- 稳定定义
+- 领域共识
+- 主题全景
+- 各分支结果之间的联系与分歧
+
+常见落点：
+- `source`
+- `concept`
+- `analysis`
+
 ### `paper`
 
 优先提取：
