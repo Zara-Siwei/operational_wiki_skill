@@ -42,12 +42,32 @@ python <skill-dir>/scripts/lint.py --wiki-dir <kb>/wiki --raw-dir <kb>/raw --jso
 - JSON 合法
 - 能发现 frontmatter / typed relation / evidence 格式问题
 
-## 4. 测试典型场景
+## 4. 测试新增脚本
+
+```text
+python <skill-dir>/scripts/search.py --wiki-dir <kb>/wiki "test" --json
+python <skill-dir>/scripts/graph.py --wiki-dir <kb>/wiki --focus "plasma"
+python <skill-dir>/scripts/stats.py --wiki-dir <kb>/wiki --raw-dir <kb>/raw --json
+```
+
+检查：
+- search.py 返回合法 JSON，含 file/title/type/score/matches
+- graph.py 输出合法 Mermaid 图
+- stats.py 返回正确计数，含 maturity 和 orphan 统计
+
+## 5. 测试典型场景
 
 至少走通两个场景：
 - 教材/论文 source -> concept
 - API docs source -> tool/api -> concept bridge
 
-## 5. 汇总
+## 6. 测试新 lint 检查项
+
+验证 lint.py 的扩展检查：
+- `check_source_freshness`：raw_hash 缺失和过期检测
+- `check_concept_maturity`：maturity 字段和建议
+- `check_overview_stats`：统计同步
+
+## 7. 汇总
 
 输出通过项与剩余风险。

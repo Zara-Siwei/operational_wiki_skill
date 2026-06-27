@@ -70,6 +70,14 @@ def resolve_wikilink(target: str) -> Path | None:
     return None
 
 
+def resolve_raw_path(raw_path: str) -> Path:
+    """Resolve source raw_path values written as either raw/foo or foo."""
+    raw_path = raw_path.replace("\\", "/").strip()
+    if raw_path.startswith("raw/"):
+        return RAW_DIR.parent / raw_path
+    return RAW_DIR / raw_path
+
+
 def get_wiki_pages() -> list[Path]:
     pages: list[Path] = []
     for name in ROOT_PAGES:
@@ -223,6 +231,177 @@ def check_evidence_format(pages: list[Path]) -> list[dict]:
     return issues
 
 
+def check_source_freshness(pages: list[Path]) -> list[dict]:
+    """Compare raw_hash in source frontmatter with current SHA256 of raw files."""
+    import hashlib
+
+    issues = []
+    for page in pages:
+        rel = str(page.relative_to(WIKI_DIR))
+        fm, _ = parse_frontmatter(page)
+        if not fm or fm.get("type") != "source":
+            continue
+        raw_path_rel = fm.get("raw_path")
+        if not raw_path_rel:
+            continue
+        raw_file = resolve_raw_path(str(raw_path_rel))
+        if not raw_file.exists():
+            issues.append(
+                {
+                    "level": "P2",
+                    "type": "raw_file_missing",
+                    "file": rel,
+                    "detail": f"raw_path 指向的文件不存在: {raw_path_rel}，source 页可能需要归档",
+                }
+            )
+            continue
+        try:
+            current_hash = hashlib.sha256(raw_file.read_bytes()).hexdigest()
+        except OSError:
+            continue
+        stored_hash = fm.get("raw_hash")
+        if not stored_hash:
+            issues.append(
+                {
+                    "level": "P1",
+                    "type": "raw_hash_missing",
+                    "file": rel,
+                    "detail": "source 页缺少 raw_hash，建议重新 ingest 以记录指纹",
+                }
+            )
+        elif stored_hash != current_hash:
+            issues.append(
+                {
+                    "level": "P1",
+                    "type": "source_stale",
+                    "file": rel,
+                    "detail": f"raw 文件指纹已变更 ({raw_path_rel})，相关 concept 页可能需要刷新",
+                }
+            )
+    return issues
+
+
+def check_concept_maturity(pages: list[Path]) -> list[dict]:
+    """Check concept pages for maturity field and consistency."""
+    issues = []
+    for page in pages:
+        rel = str(page.relative_to(WIKI_DIR))
+        fm, body = parse_frontmatter(page)
+        if not fm or fm.get("type") != "concept":
+            continue
+
+        # Count evidence lines
+        evidence_count = 0
+        ev_match = re.search(r"## Evidence\n(.*?)(?:\n## |\Z)", body, re.DOTALL)
+        if ev_match:
+            for line in ev_match.group(1).splitlines():
+                if line.strip().startswith("- ") and "source=[[" in line:
+                    evidence_count += 1
+
+        maturity = fm.get("maturity")
+        has_def = bool(re.search(r"## Definition", body))
+        has_eq = bool(re.search(r"## Key Equations", body))
+        has_asm = bool(re.search(r"## Assumptions", body))
+        has_tools = bool(re.search(r"## In Tools", body))
+
+        if not maturity:
+            # Auto-suggest based on heuristics
+            if evidence_count == 0:
+                suggested = "stub"
+            elif evidence_count >= 4 and has_def and has_eq and has_asm:
+                suggested = "mature"
+            else:
+                suggested = "partial"
+            issues.append(
+                {
+                    "level": "P2",
+                    "type": "maturity_missing",
+                    "file": rel,
+                    "detail": f"concept 页缺少 maturity 字段 (建议: {suggested}, evidence={evidence_count})",
+                }
+            )
+            continue
+
+        valid_maturity = {"stub", "partial", "mature"}
+        if maturity not in valid_maturity:
+            issues.append(
+                {
+                    "level": "P2",
+                    "type": "invalid_maturity",
+                    "file": rel,
+                    "detail": f"maturity 值 '{maturity}' 无效 (合法值: stub|partial|mature)",
+                }
+            )
+            continue
+
+        # Consistency checks
+        if maturity == "mature" and evidence_count < 2:
+            issues.append(
+                {
+                    "level": "P1",
+                    "type": "maturity_inconsistent",
+                    "file": rel,
+                    "detail": f"标记为 mature 但仅有 {evidence_count} 条 evidence",
+                }
+            )
+        if maturity == "partial" and evidence_count >= 6 and has_def and has_eq and has_asm:
+            issues.append(
+                {
+                    "level": "P2",
+                    "type": "maturity_upgrade_candidate",
+                    "file": rel,
+                    "detail": f"标记为 partial 但满足 mature 条件 (evidence={evidence_count})，建议升级",
+                }
+            )
+
+    return issues
+
+
+def check_overview_stats(pages: list[Path]) -> list[dict]:
+    """Compare overview.md stats table with actual page counts."""
+    issues = []
+    overview_path = WIKI_DIR / "overview.md"
+    if not overview_path.exists():
+        return [{"level": "P1", "type": "missing_overview", "file": "overview.md", "detail": "overview.md 不存在"}]
+
+    # Count actual pages by type
+    actual: dict[str, int] = {}
+    for page in pages:
+        fm, _ = parse_frontmatter(page)
+        if fm and fm.get("type"):
+            ptype = fm["type"]
+            actual[ptype] = actual.get(ptype, 0) + 1
+        else:
+            actual["unknown"] = actual.get("unknown", 0) + 1
+    actual["raw_files"] = sum(1 for f in RAW_DIR.rglob("*") if f.is_file()) if RAW_DIR.exists() else 0
+
+    # Parse overview stats table
+    text = overview_path.read_text(encoding="utf-8")
+    stat_pattern = re.compile(r"\|\s*(原始素材|Sources|Concepts|Tools|APIs|Analyses)\s*\|\s*(\d+)\s*\|")
+    mismatches = []
+    for match in stat_pattern.finditer(text):
+        label = match.group(1)
+        reported = int(match.group(2))
+        key_map = {"原始素材": "raw_files", "Sources": "source", "Concepts": "concept", "Tools": "tool", "APIs": "api", "Analyses": "analysis"}
+        map_key = key_map.get(label)
+        if map_key:
+            actual_val = actual.get(map_key, 0)
+            if reported != actual_val:
+                mismatches.append(f"{label}: reported={reported}, actual={actual_val}")
+
+    if mismatches:
+        issues.append(
+            {
+                "level": "P2",
+                "type": "overview_stats_stale",
+                "file": "overview.md",
+                "detail": "统计数字已过时: " + "; ".join(mismatches),
+            }
+        )
+
+    return issues
+
+
 def run_all_checks() -> list[dict]:
     pages = get_wiki_pages()
     issues = []
@@ -233,6 +412,9 @@ def run_all_checks() -> list[dict]:
     issues += check_index_consistency(pages)
     issues += check_related_format(pages)
     issues += check_evidence_format(pages)
+    issues += check_source_freshness(pages)
+    issues += check_concept_maturity(pages)
+    issues += check_overview_stats(pages)
     level_order = {"P0": 0, "P1": 1, "P2": 2}
     issues.sort(key=lambda item: (level_order.get(item["level"], 9), item["file"]))
     return issues

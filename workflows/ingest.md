@@ -1,6 +1,6 @@
 # Ingest Workflow
 
-收录新素材到 operational wiki。目标不是"抽尽所有节点"，而是建立稳定的概念页、工具/API 页和证据链。
+收录新素材到 operational wiki。目标不是“抽尽所有节点”，而是建立稳定的概念页、工具/API 页和证据链。
 
 ## 核心原则
 
@@ -15,6 +15,22 @@
 扫描 `KB_RAW`，找出未在 `wiki/sources/` 中登记的文件或目录。
 
 如果用户指定路径，只处理该对象。
+
+### 1b. 批量摄入模式
+
+当 `KB_RAW` 下存在 ≥3 个未登记素材文件时，启用批量模式：
+
+1. 列出所有未登记文件，输出清单给用户确认
+2. 按 `source_kind` 分组（paper / textbook / review / ...）
+3. 为每个文件创建 source 页骨架（source_kind + raw_path + Scope + Key Takeaways）
+4. 按权重排序优先处理：review > textbook > paper > api_docs
+5. 从最高权重的 3-5 个 source 中提取 concept 和 evidence，其余只建 source 页
+6. 批量更新 index.md 和 log.md
+
+约束：
+- 用户可以要求"只建 source 页"，跳过 concept 提取
+- 单次批量不超过 10 个 source（超过则分批）
+- 批量模式默认保守，不追求一次抽干所有概念
 
 ## 2. 识别 source 形态
 
@@ -98,6 +114,7 @@ python <skill-dir>/scripts/segment_source.py <path>
 必须包含：
 - `source_kind`
 - `raw_path`
+- `raw_hash`（SHA256 指纹，通过 Python 计算 `hashlib.sha256(raw_file.read_bytes()).hexdigest()`）
 - `Scope`
 - `Key Takeaways`
 - `Evidence Targets`
@@ -117,6 +134,14 @@ python <skill-dir>/scripts/segment_source.py <path>
 - `In Sources`
 - `In Tools`
 - `Evidence`
+
+新建或更新 concept 页时，根据以下规则标注 `maturity`（写入 frontmatter）：
+
+| 条件 | maturity |
+|------|----------|
+| 仅有基本定义，无 evidence | `stub` |
+| 有定义 + 部分 evidence（1-3 条），尚缺公式或适用范围 | `partial` |
+| 定义 + ≥4 条 evidence + Key Equations + Assumptions + In Tools | `mature`
 
 ### `tool` 页
 

@@ -20,17 +20,23 @@ python <skill-dir>/scripts/lint.py --wiki-dir <KB_WIKI> --raw-dir <KB_RAW> --jso
 - `index.md` 与实际页面不一致
 - `Related` 关系未 typed
 - `Evidence` 缺少 `source` 或 `locator`
+- `source` 页 raw 文件过期检测（raw_hash vs 实际 SHA256）
+- `concept` 页 maturity 字段与 evidence 数量校验
+- `overview.md` 统计数字与实际页面计数对比
 
 ## 2. LLM 补充检查
 
 重点补以下语义问题：
 - 页面语言是否符合 `KB_LANG`
 - `concept` 与 `tool/api` 是否缺少明显桥接
-- 是否存在"应该更新旧页却新建了重复页"
+- 是否存在”应该更新旧页却新建了重复页”
 - API 页是否过多、过碎
 - 是否有 `source` 页没有被 concept/tool/api 消化
 - 是否有重要概念缺 `Evidence`
 - 回答核心定义时是否过度依赖低权重来源，而忽略了更高权重的教材/`review`/手册型来源
+- 概念页 `maturity` 标注是否与内容质量匹配（lint 脚本只做硬指标校验，语义层面需 LLM 判断）
+- 是否有 `source_stale` 的 P1 告警，确认后决定是否刷新相关 concept 页
+- `check_overview_stats` 若报 P2 过时，按实际数字更新 `overview.md` 的统计表
 
 ## 3. 输出报告
 

@@ -52,6 +52,7 @@ sources: [source-page-id]          # source 页面可省略
 ```yaml
 source_kind: textbook | review | paper | api_docs | tutorial | reference_manual | notes
 raw_path: raw/相对路径
+raw_hash: "abc123..."   # 可选，SHA256 指纹，ingest 时自动写入，lint 时检测过期
 ```
 
 约定：
@@ -80,7 +81,7 @@ api_path: plasmapy.formulary.lengths.Debye_length
 - `sources/`: 与素材根名一致，如 `introduction-to-plasma-physics.md`
 - `concepts/`: 用稳定概念名，如 `debye-shielding.md`
 - `tools/`: 用包或模块名规范化后命名，如 `plasmapy-formulary.md`
-- `apis/`: 用"概念化 API 名"，如 `debye-length.md`
+- `apis/`: 用“概念化 API 名”，如 `debye-length.md`
 - 文件名尽量控制在 60 字符以内
 
 ## 页面结构
@@ -113,6 +114,17 @@ api_path: plasmapy.formulary.lengths.Debye_length
 ```
 
 ### `concept` 页
+
+```yaml
+# concept frontmatter 新增
+maturity: stub | partial | mature   # 概念成熟度，ingest 时可由 LLM 标注
+```
+
+| maturity | 含义 |
+|----------|------|
+| `stub` | 有基本定义，Evidence 极少（≤0 条） |
+| `partial` | 有定义和部分 Evidence，尚缺公式或适用范围 |
+| `mature` | 定义、公式、适用范围、工具映射、4+ 条 Evidence 齐全 |
 
 ```markdown
 # 概念名
@@ -202,7 +214,7 @@ api_path: plasmapy.formulary.lengths.Debye_length
 - `see_also`
 - `evidence_for`
 
-不要使用无类型的"相关页面"列表。
+不要使用无类型的“相关页面”列表。
 
 ## Evidence 区块写法
 
@@ -219,7 +231,7 @@ api_path: plasmapy.formulary.lengths.Debye_length
 ```
 
 规则：
-- 证据写"命题"，不是整段摘抄
+- 证据写“命题”，不是整段摘抄
 - `source` 指向 `source` 页，不直接指向 raw 文件
 - `locator` 尽量细到章节、标题、函数路径、HTML 标题或锚点
 

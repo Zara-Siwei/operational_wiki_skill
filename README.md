@@ -1,156 +1,109 @@
 # Operational Wiki
 
-**Evidence-first operational wiki for mixed research knowledge bases.**
+Evidence-first operational wiki for mixed research knowledge bases.
 
-维护一个"轻结构、强可读、可操作"的知识库——把教材、论文、长 Markdown、API 文档快照统一收录成可回溯的 `source` 页、`concept` 页及证据链；`tool` / `api` 页按需补充，而不是默认展开。
-
----
+维护一个“轻结构、强可读、可操作”的知识库：把教材、论文、长 Markdown、HTML 文档站快照和 API 文档统一收录成可回溯的 `source` 页、`concept` 页及证据链。日常收录以 `source + concept` 为主，`tool` / `api` 页只在确有价值或用户明确要求时补充。
 
 ## 文件结构
 
-```
+```text
 operational-wiki/
-├── SKILL.md                      ← 技能定义（Skill 文件）
-├── SCHEMA.md                     ← 页面类型、Frontmatter、Evidence、Related 规范
-├── registries.json               ← ⚠️ 模板文件，首次使用需复制并填写路径
-├── scripts/
-│   ├── router.py                 ← 子命令路由（init/ingest/query/lint/test/help）
-│   ├── lint.py                   ← 确定性健康检查（P0/P1/P2）
-│   ├── segment_source.py         ← 大文件/大 HTML 分段工具
-│   └── requirements.txt          ← 依赖：PyYAML>=6.0
-├── workflows/
-│   ├── init.md                   ← 创建新知识库
-│   ├── ingest.md                 ← 收录素材
-│   ├── query.md                  ← 查询与桥接
-│   ├── lint.md                   ← 健康检查
-│   └── test.md                   ← 技能自检
+├── SKILL.md
+├── SCHEMA.md
+├── registries.json              # 公开模板，安装后改成本机知识库路径
+├── agents/
+│   └── openai.yaml
 ├── references/
-│   └── source-strategies.md       ← 素材形态判断与读取策略
-└── agents/
-    └── openai.yaml               ← Agent interface 配置
+│   └── source-strategies.md
+├── scripts/
+│   ├── router.py
+│   ├── lint.py
+│   ├── search.py
+│   ├── graph.py
+│   ├── stats.py
+│   ├── segment_source.py
+│   └── requirements.txt
+└── workflows/
+    ├── init.md
+    ├── ingest.md
+    ├── query.md
+    ├── lint.md
+    └── test.md
 ```
 
----
+## 安装
 
-## 首次安装
-
-### 1. 安装依赖
+1. 安装依赖：
 
 ```bash
-pip install PyYAML
+pip install -r scripts/requirements.txt
 ```
 
-### 2. 填写 registries.json
+2. 将整个 `operational-wiki` 文件夹放入 Cherry Studio 的 `Data/Skills/` 目录。
 
-```bash
-cd operational-wiki
-copy registries.json registries.json.bak   # 备份模板
-# 用编辑器打开 registries.json，修改：
-#   - "path": "YOUR_KB_PATH_HERE" → 填入你的知识库根路径（如 D:\my-wiki）
-#   - "name": "我的知识库" → 填入知识库名称
-#   - "language": "zh" 或 "en"
-#   - "created": "YYYY-MM-DD"
-```
+3. 编辑 `registries.json`，把 `YOUR_KB_PATH_HERE` 改成你的知识库根目录，并设置知识库名称、语言和默认库。
 
-### 3. 在 CherryStudio 中安装技能
-
-1. 将整个 `operational-wiki` 文件夹复制到 `cherrystudio\Data\Skills\` 下
-2. 在 CherryStudio 界面中搜索并安装 `operational-wiki` 技能
-3. 或让 agent 执行：将文件夹路径传给 `mcp__skills__skills` 的 `register` action
-
----
-
-## 初始化知识库
-
-### 方式一：命令式
-
-```
-/opwiki init
-```
-
-### 方式二：手动创建目录结构
+## 命令
 
 ```text
-KB_ROOT/
-├── raw/
-│   └── assets/
-└── wiki/
-    ├── index.md
-    ├── overview.md
-    ├── log.md
-    ├── conventions.md
-    ├── sources/
-    ├── concepts/
-    ├── tools/
-    ├── apis/
-    └── analyses/
+/opwiki init
+/opwiki ingest [文件或目录]
+/opwiki query <问题>
+/opwiki search <关键词>
+/opwiki graph [概念名]
+/opwiki lint
+/opwiki test
+/opwiki help
 ```
 
-初始化完成后，手动编辑 `registries.json` 中的 `default` 和 `registries` 字段填入知识库信息。
+自然语言也可以触发同样的路由，例如“收录这本教材”“整理 raw 里的文档站”“搜索 wiki 里的概念”“画关系图谱”“检查 wiki 健康状态”。
 
----
+## 核心机制
 
-## 命令参考
-
-| 命令 | 说明 |
-|------|------|
-| `/opwiki init` | 初始化新知识库 |
-| `/opwiki ingest [文件]` | 收录素材（不指定则收录 raw/ 下全部新文件） |
-| `/opwiki query <问题>` | 基于知识库回答问题 |
-| `/opwiki lint` | 知识库健康检查 |
-| `/opwiki test` | 技能自检 |
-| `/opwiki help` | 显示帮助 |
-
----
+- `router.py`：将命令或自然语言意图映射到具体 workflow，并返回当前知识库路径。
+- `segment_source.py`：对大 Markdown / HTML / 文档站快照分段抽纲，避免一次性读取超长文件。
+- `search.py`：全文搜索 wiki 页面，支持类型过滤和 JSON 输出。
+- `graph.py`：从 `## Related` 的 typed relations 生成 Mermaid 关系图谱。
+- `stats.py`：统计 source / concept / tool / api / analysis、raw 文件、concept maturity 和 evidence 覆盖情况。
+- `lint.py`：确定性健康检查，覆盖断链、frontmatter、索引一致性、typed relation、Evidence、raw 指纹、maturity 和 overview 统计。
 
 ## 页面类型
 
 | 类型 | 说明 |
 |------|------|
-| `source` | 原始素材摘要页（教材、论文、文档快照） |
-| `concept` | 稳定概念：定义、公式、适用条件、证据 |
-| `tool` | 工具/包/模块总览页（仅在确有必要时补充） |
-| `api` | 高价值函数、类、方法页（默认不创建，仅用户明确要求时使用） |
+| `source` | 原始资料摘要页：教材、论文、HTML、文档站目录、API docs |
+| `concept` | 稳定概念页：定义、公式、适用条件、证据、工具映射 |
+| `tool` | 工具、包、模块或工作流总览页 |
+| `api` | 高价值函数、类、方法页；默认不主动创建 |
 | `analysis` | 跨来源综合分析 |
-| `overview` | 知识库总览（系统页，自动维护） |
-| `conventions` | 操作偏好与约定（系统页） |
+| `overview` | 知识库总览 |
+| `conventions` | 当前知识库操作偏好 |
 
----
+## 默认收录策略
 
-## 默认工作模式
+- 先创建或更新 `source` 页，再把精华信息吸收到已有 `concept` 页。
+- 教材、综述、论文优先沉淀为稳定概念和证据。
+- API 文档默认按“文献模式”处理：保留 source 页，将公式定义、参数约束、适用边界补到 concept 页。
+- 大文件或单页大 HTML 先运行 `segment_source.py` 分段，再挑关键 chunk 深读。
+- 批量收录时默认保守：先建 source 页骨架，再从最高价值的 3-5 个 source 提取概念和 evidence。
 
-- 日常 ingest 以 `source + concept` 为主
-- `tool` / `api` 只在反复引用、需要统一索引，或用户明确要求时补充
-- `api_docs` 默认按"文献模式"处理：保留 source 页，将公式定义、参数约束、适用边界吸收到 concept 页
+## Evidence
 
----
+```markdown
+## Evidence
+- Debye shielding causes exponential screening beyond the Debye length. | source=[[introduction-to-plasma-physics]] | locator=Ch1.3
+```
 
-## 来源分层
+规则：
 
-技能不会给 concept 节点额外维护"重要性"字段，而是在查询和综合时利用 `source_kind` 做默认来源分层：
-
-1. `textbook` / `reference_manual` / `tutorial`
-2. `review`
-3. `paper`
-4. `api_docs` / `notes`
-
-使用原则：
-- 核心定义、标准公式、基本假设优先采用高权重来源
-- `review` 在可靠性和覆盖面方面高于单项研究论文，可作为一级定义参考
-- 研究性论文更适合作为补充证据、特例、边界条件或新近结果
-- `api_docs` 主要用于实现细节、参数约束和使用边界，不单独主导物理定义
-
----
+- Evidence 写成可验证的命题，不复制大段原文。
+- `source` 指向 wiki 里的 `source` 页。
+- `locator` 尽量精确到章节、标题、函数路径、HTML 标题或锚点。
 
 ## Typed Relations
 
-所有 `## Related` 必须使用 typed relation：
+`## Related` 中每行必须使用 typed relation：
 
-- `documents` / `explained_by` / `implements` / `implemented_by`
-- `documented_in` / `exposes` / `uses` / `depends_on`
-- `compares_with` / `see_also` / `evidence_for`
-
-示例：
 ```markdown
 ## Related
 - explained_by: [[introduction-to-plasma-physics]]
@@ -158,42 +111,31 @@ KB_ROOT/
 - see_also: [[magnetic-reconnection]]
 ```
 
----
+允许的 relation：
 
-## Evidence 格式
+- `documents`
+- `explained_by`
+- `implements`
+- `implemented_by`
+- `documented_in`
+- `exposes`
+- `uses`
+- `depends_on`
+- `compares_with`
+- `see_also`
+- `evidence_for`
 
-```markdown
-## Evidence
-- Debye shielding causes exponential screening beyond λ_D. | source=[[introduction-to-plasma-physics]] | locator=Ch1.3
+## 自检
+
+```bash
+python scripts/router.py help
+python scripts/router.py ingest
+python scripts/lint.py --wiki-dir <KB_ROOT>/wiki --raw-dir <KB_ROOT>/raw --json
+python scripts/search.py --wiki-dir <KB_ROOT>/wiki "test" --json
+python scripts/graph.py --wiki-dir <KB_ROOT>/wiki
+python scripts/stats.py --wiki-dir <KB_ROOT>/wiki --raw-dir <KB_ROOT>/raw --json
 ```
-
-规则：
-- 写"命题"，不抄原文
-- `source` 指向 `source` 页，不直接指向 raw 文件
-- `locator` 精确到章节、标题、函数路径或 HTML 锚点
-
----
-
-## Lint 检查级别
-
-| 级别 | 含义 | 处理方式 |
-|------|------|----------|
-| P0 | 断链、缺 frontmatter、索引不一致 | 必须修复 |
-| P1 | Typed relation、Evidence、路径约定、非受管 Markdown | 建议修复 |
-| P2 | 语义问题、重复页 | 视情况优化 |
-
-
----
 
 ## 致谢
 
-本技能基于 [ChavesLiu/second-brain-skill](https://github.com/ChavesLiu/second-brain-skill) 改良而来。在原版基础上，针对个人知识库的实际使用场景做了以下扩展：
-
-- **结构化分层**：以 `source / concept / tool / api / analysis` 五类核心内容页组织知识，并配套 `overview / conventions` 等系统页面；日常 ingest 以 `source + concept` 为主
-- **Typed Relations**：所有跨页关系强制使用带类型的关系标签（`explained_by`、`implemented_by` 等），提升知识图谱可用性
-- **证据追溯**：引入 `Evidence` 区块，要求每条证据包含 `source` + `locator`，确保可回溯到原始资料
-- **来源分层**：利用 `source_kind` 在查询阶段自动区分教材/手册/`review`、一般研究论文与 API 文档的权重，而不为 concept 节点额外增加重要性字段
-- **大文件分段读取**：新增 `segment_source.py`，支持对超大 Markdown / HTML 文件按标题分段抽纲，避免一次性塞入上下文
-- **lint 健康检查**：新增 P0/P1/P2 三级审计，覆盖断链、frontmatter、索引一致性、关系格式、证据格式、路径约定等维度
-- **约定管理**：引入 `conventions.md`，记录用户在查询/收录/lint 时的偏好设置
-- **多知识库支持**：`registries.json` 支持多库注册 + default 指定
+本技能基于 [ChavesLiu/second-brain-skill](https://github.com/ChavesLiu/second-brain-skill) 的思路改良，重点强化了 research wiki 的 source/concept 分层、证据回溯、typed relations、大文件分段、健康检查和多知识库注册。
